@@ -5,7 +5,7 @@ import gcsfs
 import plotly.express as px
 from datetime import datetime
 # Constants
-API_URL = "http://localhost:8000/employee_attrition"
+API_URL = "http://localhost:8000/predictRisk"
 GCS_BUCKET = "employee_attr"
 GCS_RISK_SCORES = "risk_score_df.csv"
 
@@ -23,18 +23,6 @@ def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
     with fs.open(f"{bucket_name}/{file_path}") as f:
         return pd.read_csv(f)
 
-def format_risk_table(df: pd.DataFrame)     :
-    """Format the high-risk employee table"""
-    return df.style.format({
-        'risk_score': '{:.2f}',
-        'age': '{:.0f}',
-        'tenure': '{:.1f} years'
-    }).background_gradient(
-        subset=['risk_score'],
-        cmap='Reds'
-    ).set_properties(
-        subset=None, **{'text-align': 'left'}
-    )
 
 def plot_survival_curves(survival_df: pd.DataFrame):
         # Create an interactive survival curve plot using plotly
@@ -58,6 +46,15 @@ def plot_survival_curves(survival_df: pd.DataFrame):
     )
     return fig
 
+def risk_gradient_color(val, max_risk, min_risk):
+    """Generate orange gradient from max to min risk"""
+    normalized = (val - min_risk) / (max_risk - min_risk)
+    # Convert to 0-255 range (more orange for higher risk)
+    r = 255
+    g = max(50, int(255 * (1 - normalized * 0.8)))  # Keep some orange tint
+    b = 0
+    return f'background-color: rgb({r},{g},{b})'
+
 # Main App
 def main():
     st.title("Employee Attrition Risk Analysis")
@@ -65,7 +62,14 @@ def main():
     This dashboard analyzes employee attrition risk using predictive models.
     Data is loaded directly from Google Cloud Storage.
     """)
-
+    # Slider for num_samples
+    num_samples = st.slider(
+        "Number of high-risk employees to analyze",
+        min_value=5,
+        max_value=25,
+        value=10,
+        step=5
+    )
     # Load data
     try:
         risk_scores_df = load_gcs_data(GCS_BUCKET, GCS_RISK_SCORES)
@@ -77,61 +81,110 @@ def main():
         # Make API request when button clicked
         if st.button("Run Risk Prediction"):
             with st.spinner("Analyzing employee risks..."):
-                try:
-                    # Prepare API request payload
-                    payload = {
-                        "risk_scores_df": risk_scores_df.to_dict(orient="records"),
-                        "num_samples": 10
-                    }
 
-                    # Make API request
-                    response = requests.post(API_URL, json=payload)
-                    response.raise_for_status()
+                # Prepare API request payload
+                payload = {
+                    "risk_scores_df": risk_scores_df.to_dict(orient="list"),
+                    "num_samples": num_samples
+                }
 
-                    # Process response
-                    results = response.json()
-                    top_n_high_risk = pd.DataFrame(results["top_n_high_risk"])
-                    survival_df = pd.DataFrame(results["survival_df"])
+                # Make API request
+                response = requests.post(API_URL, json=payload)
+                response.raise_for_status()
 
-                    # Display results
-                    col1, col2 = st.columns(2)
+                # Process response
+                results = response.json()
+                top_n_high_risk = pd.DataFrame(results["top_n_high_risk"])
+                survival_df = pd.DataFrame(results["survival_df"])
 
-                    with col1:
-                        st.subheader(f"Top {num_samples} High-Risk Employees")
+                with st.container(height=True):
+                    st.dataframe(risk_scores_df, use_container_width=True)
+
+                # Display results
+                col1, col2 = st.columns([2, 1])
+
+                with col1:
+                    st.subheader(f"Top {num_samples} High-Risk Employees")
+                    max_risk = top_n_high_risk['PredictedRisk'].max()
+                    min_risk = top_n_high_risk['PredictedRisk'].min()
+
+                    # Create compact display
+                    compact_cols = ['PredictedRisk','EmployeeNumber', 'Age', 'Department', 'JobRole',
+                                'JobLevel', 'YearsAtCompany']
+                    compact_view = top_n_high_risk[compact_cols].copy()
+                    compact_view.insert(0, 'Rank', range(1, len(compact_view)+1))
+                    # Apply gradient styling
+                    styled_df = compact_view.style.apply(
+                        lambda x: [risk_gradient_color(v, max_risk, min_risk) for v in x],
+                        subset=['PredictedRisk'],
+                        axis=0
+                    ).format({'PredictedRisk': "{:.2f}"})
+
+                    with st.container(height=True):
+                        st.dataframe(styled_df, use_container_width=True)
+
+
+                with col2:
+                    st.subheader("Key Metrics")
+                    st.metric("Highest Risk", f"{top_n_high_risk['PredictedRisk'].max():.2f}")
+                    st.metric("Average Tenure", f"{top_n_high_risk['TotalWorkingYears'].mean():.1f} years")
+
+                    # Get top 2 risky departments
+                    dept_counts = top_n_high_risk['Department'].value_counts().head(2)
+                    top_depts = pd.DataFrame({
+                        'Department': dept_counts.index,
+                        'At Risk Employees': dept_counts.values
+                    })
+
+                    st.write("**Departments at Risk**")
+                    st.dataframe(
+                        top_depts,
+                        hide_index=True,
+                        use_container_width=True,
+                        height=min(100, 35 * len(top_depts) + 10)  # Compact height
+)
+
+                    # Find highest JobLevel at risk
+                    max_level = top_n_high_risk['JobLevel'].max()
+                    high_level_risks = top_n_high_risk[top_n_high_risk['JobLevel'] == max_level]
+
+                    if not high_level_risks.empty:
+                        highest = high_level_risks.iloc[0]
+
+                        # Create mini-table
+                        high_risk_employee = pd.DataFrame({
+                            'Detail': ['Job Level', 'Risk Score', 'Employee', 'Department'],
+                            'Value': [
+                                f"L{max_level}",
+                                f"{highest['PredictedRisk']:.2f}",
+                                highest['EmployeeNumber'],
+                                highest['Department']
+                            ]
+                        })
+
+                        st.write(f"**Highest Level at Risk (L{max_level})**")
                         st.dataframe(
-                            top_n_high_risk.style.format({
-                                'risk_score': '{:.3f}',
-                                'age': '{:.0f}'
-                            }).background_gradient(
-                                subset=['risk_score'],
-                                cmap='Reds'
-                            ),
-                            height=600,
-                            use_container_width=True
+                            high_risk_employee,
+                            hide_index=True,
+                            use_container_width=True,
+                            height=150  # Fixed compact size
                         )
 
-                    with col2:
-                        st.subheader("Survival Analysis")
-                        st.plotly_chart(
-                            plot_survival_curves(survival_df),
-                            use_container_width=True
-                        )
-
-                    # Download buttons
                     st.download_button(
-                        label="Download High-Risk Employees Data",
+                        label="Download Results",
                         data=top_n_high_risk.to_csv(index=False),
-                        file_name="high_risk_employees.csv",
+                        file_name=f"high_risk_employees.csv",
                         mime="text/csv"
                     )
 
-                except requests.exceptions.RequestException as e:
-                    st.error(f"API Error: {str(e)}")
-                except Exception as e:
-                    st.error(f"Processing Error: {str(e)}")
+                st.subheader("Survival Analysis")
+                st.plotly_chart(
+                    plot_survival_curves(survival_df),
+                    use_container_width=True
+                )
 
     except Exception as e:
-        st.error(f"Error loading data from GCS: {str(e)}")
+        st.error(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     main()
