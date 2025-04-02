@@ -28,7 +28,7 @@ def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
         # Initialize GCSFS with credentials from Streamlit Secrets
         fs = gcsfs.GCSFileSystem(token=st.secrets["gcp_service_account"])
         with fs.open(f"{bucket_name}/{file_path}") as f:
-            return pd.read_csv(f)
+            return pd.read_csv(f, skip_blank_lines=True, on_bad_lines="skip", encoding="utf-8")
     except Exception as e:
         st.error(f"Failed to read {file_path} from GCS: {e}")
         return pd.DataFrame()  # Return empty DataFrame as fallback
