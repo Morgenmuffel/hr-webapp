@@ -23,10 +23,15 @@ st.set_page_config(
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
-    """Load CSV from GCS"""
-    fs = gcsfs.GCSFileSystem()
-    with fs.open(f"{bucket_name}/{file_path}") as f:
-        return pd.read_csv(f)
+    """Read a CSV from GCS with explicit credentials."""
+    try:
+        # Initialize GCSFS with credentials from Streamlit Secrets
+        fs = gcsfs.GCSFileSystem(token=st.secrets["gcp_service_account"])
+        with fs.open(f"{bucket_name}/{file_path}") as f:
+            return pd.read_csv(f)
+    except Exception as e:
+        st.error(f"Failed to read {file_path} from GCS: {e}")
+        return pd.DataFrame()  # Return empty DataFrame as fallback
 
 
 def plot_survival_curves(survival_df: pd.DataFrame):
