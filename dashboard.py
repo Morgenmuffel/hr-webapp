@@ -7,7 +7,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-from datetime import datetime
 # Constants
 API_URL = "http://localhost:8000/"
 GCS_BUCKET = "employee_attr"
@@ -26,7 +25,7 @@ def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
     """Read a CSV from GCS with explicit credentials."""
     try:
         # Initialize GCSFS with credentials from Streamlit Secrets
-        fs = gcsfs.GCSFileSystem(token=st.secrets["gcp_service_account"])
+        fs = gcsfs.GCSFileSystem(token=dict(st.secrets["gcp_service_account"]))
         with fs.open(f"{bucket_name}/{file_path}") as f:
             return pd.read_csv(f, skip_blank_lines=True, on_bad_lines="skip", encoding="utf-8")
     except Exception as e:
