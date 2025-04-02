@@ -11,7 +11,8 @@ install_requirements:
 
 streamlit:
 	-@streamlit run dashboard.py
-
+str_debug:
+	-@PYTHONBREAKPOINT=0 streamlit run dashboard.py --server.port 8501 --server.enableCORS false
 
 # ----------------------------------
 #    LOCAL INSTALL COMMANDS
