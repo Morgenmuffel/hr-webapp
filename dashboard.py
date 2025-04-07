@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 # Constants
-API_URL = "http://localhost:8000/"
+API_URL = "https://employee-attrition-778867587659.europe-west1.run.app/:8080/"
 GCS_BUCKET = "employee_attr"
 GCS_RISK_SCORES = "risk_score_df.csv"
 GCS_FEATURE_IMPORTANCE = "feature_importance_df.csv"
@@ -20,7 +20,7 @@ st.set_page_config(
     page_icon="📊"
 )
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
+# @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
     """Read a CSV from GCS with explicit credentials."""
     try:
