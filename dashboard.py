@@ -268,12 +268,12 @@ def main():
                                     #         height=150  # Fixed compact size
                                     #     )
 
-                                    st.download_button(
-                                        label="Download Results",
-                                        data=top_n_high_risk.to_csv(index=False),
-                                        file_name=f"high_risk_employees.csv",
-                                        mime="text/csv"
-                                    )
+                        st.download_button(
+                                label="Download Results",
+                                data=top_n_high_risk.to_csv(index=False),
+                                file_name=f"high_risk_employees.csv",
+                                mime="text/csv"
+                            )
 
 
 
