@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from pathlib import Path
+import base64
 
 # Constants
 API_URL = "https://employee-attrition-778867587659.europe-west1.run.app/"
@@ -14,26 +15,34 @@ GCS_BUCKET = "employee_attr"
 GCS_RISK_SCORES = "risk_score_df.csv"
 GCS_FEATURE_IMPORTANCE = "feature_importance_df.csv"
 
+def img_to_base64(img_path):
+    with open(img_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
 def load_css():
-    # Set page config to use the entire viewport
-    st.set_page_config(layout="wide")
+    # Set page config
+    st.set_page_config(
+        page_title="Employee Risk Dashboard",
+        layout="wide",
+        page_icon="📊"
+    )
 
-    # Path to the CSS file
+    """Load and modify CSS with dynamic image injection"""
+    # 1. Paths to files
     css_file = Path(__file__).parent / "assets" / "styles.css"
+    img_file = Path(__file__).parent / "assets" / "bg.jpg"
 
-    # Read CSS file
+    # 2. Convert image to Base64
+    img_b64 = img_to_base64(img_file)
+    bg_image = f'url("data:image/jpg;base64,{img_b64}")'
+
+    # 3. Read CSS and replace the variable
     with open(css_file) as f:
-        css = f"<style>{f.read()}</style>"
+        css = f.read().replace("var(--bg-image)", bg_image)
 
-    # Inject CSS with Markdown
-    st.markdown(css, unsafe_allow_html=True)
+    # 4. Inject the modified CSS
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
-# Set page config
-st.set_page_config(
-    page_title="Employee Risk Dashboard",
-    layout="wide",
-    page_icon="📊"
-)
 
 # @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
