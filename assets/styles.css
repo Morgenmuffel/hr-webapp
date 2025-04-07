@@ -1,0 +1,58 @@
+/* assets/styles.css */
+.stApp {
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+              url("./nastuh-abootalebi-eHD8Y1Znfpk-unsplash.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: white;
+}
+
+/* Main content area */
+.main .block-container {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  padding: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+  color: white !important;
+}
+
+/* Text */
+p, div {
+  color: white !important;
+}
+
+/* Streamlit widgets */
+.stTextInput, .stTextArea, .stNumberInput, .stSelectbox {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+/* Buttons */
+.stButton>button {
+  background-color: #4a4a4a;
+  color: white;
+  border: 1px solid #666;
+}
+
+/* Sliders */
+.stSlider {
+  color: white;
+}
+
+/* Dataframes */
+.dataframe {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: white !important;
+}
+
+/* Tables */
+table {
+  color: white !important;
+}

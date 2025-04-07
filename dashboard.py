@@ -6,12 +6,27 @@ import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from pathlib import Path
 
 # Constants
 API_URL = "https://employee-attrition-778867587659.europe-west1.run.app/"
 GCS_BUCKET = "employee_attr"
 GCS_RISK_SCORES = "risk_score_df.csv"
 GCS_FEATURE_IMPORTANCE = "feature_importance_df.csv"
+
+def load_css():
+    # Set page config to use the entire viewport
+    st.set_page_config(layout="wide")
+
+    # Path to the CSS file
+    css_file = Path(__file__).parent / "assets" / "styles.css"
+
+    # Read CSS file
+    with open(css_file) as f:
+        css = f"<style>{f.read()}</style>"
+
+    # Inject CSS with Markdown
+    st.markdown(css, unsafe_allow_html=True)
 
 # Set page config
 st.set_page_config(
@@ -67,6 +82,8 @@ def risk_gradient_color(val, max_risk, min_risk):
 
 # Main App
 def main():
+    # Load CSS
+    load_css()
     st.title("Employee Attrition Risk Analysis")
     st.markdown("""
     This dashboard analyzes employee attrition risk using predictive models.
@@ -108,7 +125,7 @@ def main():
 
 
         # Create plot with modern styling
-        plt.figure(figsize=(12, 8))  # Slightly taller for better proportions
+        plt.figure(figsize=(6, 8))  # Slightly taller for better proportions
         ax = sns.barplot(
             x='Importance',
             y='Feature',  # Horizontal bars often work better for feature importance
@@ -138,15 +155,13 @@ def main():
                         f'{width:.3f}',
                         ha='left', va='center', fontsize=9)
 
-        # Display in Streamlit
-        st.pyplot(plt.gcf())
-        plt.clf()  # Clear figure to avoid memory issues
-
-        st.empty()
-        st.empty()
-        st.empty()
-        col1, col2 = st.columns([1, 4])  # Adjust ratio as needed
+        col1, col2 = st.columns([1, 1])  # Adjust ratio as needed
         with col1:
+            # Display in Streamlit
+            st.pyplot(plt.gcf())
+            plt.clf()  # Clear figure to avoid memory issues
+
+        with col2:
             # Slider for num_samples
 
             num_samples = st.slider(
@@ -158,32 +173,24 @@ def main():
             )
 
 
-        # Make API request when button clicked
-        if st.button("Show Survival Curves"):
-            with st.spinner("Analysing data..."):
+            # Make API request when button clicked
+            if st.button("Show Survival Curves"):
+                with st.spinner("Analysing data..."):
 
-                top_n_high_risk =risk_scores_df.head(num_samples)
-                # Prepare API request payload
-                payload = {
-                    "hr_data": top_n_high_risk.drop(columns=['PredictedRisk']).to_dict(orient="list"),
-                }
+                    top_n_high_risk =risk_scores_df.head(num_samples)
+                    # Prepare API request payload
+                    payload = {
+                        "hr_data": top_n_high_risk.drop(columns=['PredictedRisk']).to_dict(orient="list"),
+                    }
 
-                # Make API request
-                response = requests.post(API_URL+"getSurvivalCurves", json=payload)
-                response.raise_for_status()
+                    # Make API request
+                    response = requests.post(API_URL+"getSurvivalCurves", json=payload)
+                    response.raise_for_status()
 
-                # Process response
-                results = response.json()
-                survival_df = pd.DataFrame(results["survival_df"])
+                    # Process response
+                    results = response.json()
+                    survival_df = pd.DataFrame(results["survival_df"])
 
-                # Calculate dynamic height (35px per row + header)
-                # df_height = min(600, 30 * len(top_n_high_risk) + 35)
-                # st.dataframe(top_n_high_risk, height=df_height, use_container_width=True)
-
-                # Display results
-                col1, col2 = st.columns([2, 1])
-
-                with col1:
                     st.subheader(f"Top {num_samples} High-Risk Employees")
                     max_risk = top_n_high_risk['PredictedRisk'].max()
                     min_risk = top_n_high_risk['PredictedRisk'].min()
@@ -203,59 +210,70 @@ def main():
                     df_height = 35 * len(top_n_high_risk) + 35
                     st.dataframe(styled_df, height=df_height, hide_index=True, use_container_width=True)
 
-                    st.subheader("Survival Analysis")
-                    st.plotly_chart(
-                        plot_survival_curves(survival_df),
-                        use_container_width=True
-                    )
-                with col2:
-                    st.subheader("Key Metrics")
-                    st.metric("Highest Risk", f"{top_n_high_risk['PredictedRisk'].max():.2f}")
-                    st.metric("Average Tenure", f"{top_n_high_risk['YearsAtCompany'].mean():.1f} years")
+                    st.empty()  # This resets the layout
 
-                    # Get top 2 risky departments
-                    dept_counts = top_n_high_risk['Department'].value_counts().head(2)
-                    top_depts = pd.DataFrame({
-                        'Department': dept_counts.index,
-                        'At Risk Employees': dept_counts.values
-                    })
+        # Calculate dynamic height (35px per row + header)
+        # df_height = min(600, 30 * len(top_n_high_risk) + 35)
+        # st.dataframe(top_n_high_risk, height=df_height, use_container_width=True)
 
-                    st.write("**Departments at Risk**")
-                    st.dataframe(
-                        top_depts,
-                        hide_index=True,
-                        use_container_width=True,
-                        height = 35 * len(top_depts) + 38)
+                    # Display results
+                    col1, col2 = st.columns([3, 1])
 
-                    # Find highest JobLevel at risk
-                    # max_level = top_n_high_risk['JobLevel'].max()
-                    # high_level_risks = top_n_high_risk[top_n_high_risk['JobLevel'] == max_level]
+                    with col1:
 
-                    # if not high_level_risks.empty:
-                    #     highest = high_level_risks.iloc[0]
+                        st.subheader("Survival Analysis")
+                        st.plotly_chart(
+                            plot_survival_curves(survival_df),
+                            use_container_width=True
+                        )
+                    with col2:
+                        st.subheader("Key Metrics")
+                        st.metric("Highest Risk", f"{top_n_high_risk['PredictedRisk'].max():.2f}")
+                        st.metric("Average Tenure", f"{top_n_high_risk['YearsAtCompany'].mean():.1f} years")
 
-                    #     # Create mini-table
-                    #     high_risk_employee = pd.DataFrame([['Risk Score', 'Employee', 'Department'],
-                    #         [
-                    #             f"{highest['PredictedRisk']:.2f}",
-                    #             highest['EmployeeNumber'],
-                    #             highest['Department']
-                    #         ]])
+                        # Get top 2 risky departments
+                        dept_counts = top_n_high_risk['Department'].value_counts().head(2)
+                        top_depts = pd.DataFrame({
+                            'Department': dept_counts.index,
+                            'At Risk Employees': dept_counts.values
+                        })
 
-                    #     st.write(f"**Highest Level at Risk: (L{max_level})**")
-                    #     st.dataframe(
-                    #         high_risk_employee,
-                    #         hide_index=True,
-                    #         use_container_width=True,
-                    #         height=150  # Fixed compact size
-                    #     )
+                        st.write("**Departments at Risk**")
+                        st.dataframe(
+                            top_depts,
+                            hide_index=True,
+                            use_container_width=True,
+                            height = 35 * len(top_depts) + 38)
 
-                    st.download_button(
-                        label="Download Results",
-                        data=top_n_high_risk.to_csv(index=False),
-                        file_name=f"high_risk_employees.csv",
-                        mime="text/csv"
-                    )
+                                    # Find highest JobLevel at risk
+                                    # max_level = top_n_high_risk['JobLevel'].max()
+                                    # high_level_risks = top_n_high_risk[top_n_high_risk['JobLevel'] == max_level]
+
+                                    # if not high_level_risks.empty:
+                                    #     highest = high_level_risks.iloc[0]
+
+                                    #     # Create mini-table
+                                    #     high_risk_employee = pd.DataFrame([['Risk Score', 'Employee', 'Department'],
+                                    #         [
+                                    #             f"{highest['PredictedRisk']:.2f}",
+                                    #             highest['EmployeeNumber'],
+                                    #             highest['Department']
+                                    #         ]])
+
+                                    #     st.write(f"**Highest Level at Risk: (L{max_level})**")
+                                    #     st.dataframe(
+                                    #         high_risk_employee,
+                                    #         hide_index=True,
+                                    #         use_container_width=True,
+                                    #         height=150  # Fixed compact size
+                                    #     )
+
+                                    st.download_button(
+                                        label="Download Results",
+                                        data=top_n_high_risk.to_csv(index=False),
+                                        file_name=f"high_risk_employees.csv",
+                                        mime="text/csv"
+                                    )
 
 
 

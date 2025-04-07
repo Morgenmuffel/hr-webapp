@@ -1,3 +1,5 @@
 .python-version
 .env
 __pycache__/
+.streamlit
+.streamlit/*
