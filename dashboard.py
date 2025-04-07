@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 # Constants
-API_URL = "https://employee-attrition-778867587659.europe-west1.run.app:8000/"
+API_URL = "https://employee-attrition-778867587659.europe-west1.run.app"
 GCS_BUCKET = "employee_attr"
 GCS_RISK_SCORES = "risk_score_df.csv"
 GCS_FEATURE_IMPORTANCE = "feature_importance_df.csv"
