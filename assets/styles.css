@@ -1,6 +1,6 @@
 /* assets/styles.css */
 .stApp {
-  background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)),
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)),
   var(--bg-image);
   background-size: cover;
   background-position: center;
@@ -8,22 +8,7 @@
   background-attachment: fixed;
   color: white;
 }
-
-/* Main content area */
-.main .block-container {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 10px;
-  padding: 2rem;
-  margin-top: 2rem;
-  margin-bottom: 2rem;
-}
-
-/* Headers */
-h1, h2, h3, h4, h5, h6 {
-  color: white !important;
-}
-
-/* Text */
-p {
-  color: white !important;
+.stButton {
+  background-color: #cf5821;
+  border-color: #cf5821;
 }

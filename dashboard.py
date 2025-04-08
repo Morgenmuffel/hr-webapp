@@ -27,7 +27,7 @@ def load_css():
         page_icon="📊"
     )
 
-    """Load and modify CSS with dynamic image injection"""
+
     # 1. Paths to files
     css_file = Path(__file__).parent / "assets" / "styles.css"
     img_file = Path(__file__).parent / "assets" / "bg.jpg"
@@ -46,7 +46,7 @@ def load_css():
 
 # @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_gcs_data(bucket_name: str, file_path: str) -> pd.DataFrame:
-    """Read a CSV from GCS with explicit credentials."""
+
     try:
         # Initialize GCSFS with credentials from Streamlit Secrets
         fs = gcsfs.GCSFileSystem(token=dict(st.secrets["gcp_service_account"]))
@@ -102,77 +102,74 @@ def main():
     # Load data
     try:
         risk_scores_df = load_gcs_data(GCS_BUCKET, GCS_RISK_SCORES)
-
-        # Display data preview
-        with st.expander("Preview Active Employees at Risk", expanded=True):
-            # Reorder columns with predictedRisk first
-            columns_order = ['PredictedRisk'] + [col for col in risk_scores_df.columns if col != 'PredictedRisk']
-
-            # Display dataframe without index
-            st.dataframe(
-                risk_scores_df[columns_order].head(10),
-                hide_index=True,
-        )
-
-        feature_importance_df = load_gcs_data(GCS_BUCKET, GCS_FEATURE_IMPORTANCE)
-        # Set modern style
-        sns.set_style("whitegrid")
-
-        # Filter features by importance threshold (0.001)
-        threshold = 0.001
-        filtered_df = feature_importance_df[feature_importance_df['Importance'] > threshold].sort_values(by='Importance', ascending=False)
-        # Create custom color gradient from light pink to your red (#FF4B4B)
-        colors = [
-            (1.0, 0.9, 0.0),  # Yellow
-            (1.0, 0.294, 0.0)  # #FF4B4B converted to 0-1 RGB
-        ]
-        cmap = LinearSegmentedColormap.from_list("custom_red_gradient", colors)
-
-        # Normalize importance values for coloring
-        norm = plt.Normalize(filtered_df['Importance'].min(), filtered_df['Importance'].max())
-        bar_colors = cmap(norm(filtered_df['Importance']))
-
-
-        # Create plot with modern styling
-        plt.figure(figsize=(6, 8))  # Slightly taller for better proportions
-        ax = sns.barplot(
-            x='Importance',
-            y='Feature',  # Horizontal bars often work better for feature importance
-            data=filtered_df,
-            edgecolor='.1',  # Subtle edge color
-            palette=bar_colors,
-            linewidth=0.1
-        )
-
-        # Customize plot appearance
-        plt.title("Feature Importance in Employee Attrition Prediction",
-                fontsize=16, pad=20, fontweight='bold')
-        plt.xlabel("Importance", fontsize=12, labelpad=10)
-        plt.ylabel("Feature", fontsize=12, labelpad=10)
-        plt.xticks(fontsize=10)
-        plt.yticks(fontsize=10)
-
-        # Remove spines for cleaner look
-        sns.despine(left=True, bottom=True)
-
-        # Add value annotations if there's space
-        max_len = filtered_df['Feature'].str.len().max()
-        if len(filtered_df) < 15 and max_len < 20:  # Only annotate if not too crowded
-            for p in ax.patches:
-                width = p.get_width()
-                ax.text(width + 0.001, p.get_y() + p.get_height()/2.,
-                        f'{width:.3f}',
-                        ha='left', va='center', fontsize=9)
-
-        col1, col2 = st.columns([1, 1])  # Adjust ratio as needed
+        col1, col2 = st.columns([3, 2])
         with col1:
-            # Display in Streamlit
+            # Display data preview
+            with st.expander("Preview Active Employees at Risk", expanded=True):
+                # Reorder columns with predictedRisk first
+                columns_order = ['PredictedRisk'] + [col for col in risk_scores_df.columns if col != 'PredictedRisk']
+
+                # Display dataframe without index
+                st.dataframe(
+                    risk_scores_df[columns_order].head(10),
+                    hide_index=True,
+            )
+        with col2:
+            st.subheader("Feature Importance in Employee Attrition Prediction")
+            feature_importance_df = load_gcs_data(GCS_BUCKET, GCS_FEATURE_IMPORTANCE)
+            # Set modern style
+            sns.set_style("whitegrid")
+
+            # Filter features by importance threshold (0.001)
+            threshold = 0.001
+            filtered_df = feature_importance_df[feature_importance_df['Importance'] > threshold].sort_values(by='Importance', ascending=False)
+            # Create custom color gradient from light pink to your red (#FF4B4B)
+            colors = [
+                (1.0, 0.9, 0.0),  # Yellow
+                (1.0, 0.294, 0.0)  # #FF4B4B converted to 0-1 RGB
+            ]
+            cmap = LinearSegmentedColormap.from_list("custom_red_gradient", colors)
+
+            # Normalize importance values for coloring
+            norm = plt.Normalize(filtered_df['Importance'].min(), filtered_df['Importance'].max())
+            bar_colors = cmap(norm(filtered_df['Importance']))
+
+
+            # Create plot with modern styling
+            plt.figure(figsize=(6, 8))  # Slightly taller for better proportions
+            ax = sns.barplot(
+                x='Importance',
+                y='Feature',  # Horizontal bars often work better for feature importance
+                data=filtered_df,
+                edgecolor='.1',  # Subtle edge color
+                palette=bar_colors,
+                linewidth=0.1
+            )
+
+            # Customize plot appearance
+            # plt.title("Feature Importance in Employee Attrition Prediction",
+            #         fontsize=16, pad=20, fontweight='bold')
+            plt.xlabel("Importance", fontsize=12, labelpad=10)
+            plt.ylabel("Feature", fontsize=12, labelpad=10)
+            plt.xticks(fontsize=10)
+            plt.yticks(fontsize=10)
+
+            # Remove spines for cleaner look
+            sns.despine(left=True, bottom=True)
+
+            # Add value annotations if there's space
+            max_len = filtered_df['Feature'].str.len().max()
+            if len(filtered_df) < 15 and max_len < 20:  # Only annotate if not too crowded
+                for p in ax.patches:
+                    width = p.get_width()
+                    ax.text(width + 0.001, p.get_y() + p.get_height()/2.,
+                            f'{width:.3f}',
+                            ha='left', va='center', fontsize=9)
             st.pyplot(plt.gcf())
             plt.clf()  # Clear figure to avoid memory issues
 
-        with col2:
-            # Slider for num_samples
-
+        col1, col2 = st.columns([1, 4])
+        with col1:
             num_samples = st.slider(
                 "Number of high-risk employees to analyze",
                 min_value=5,
@@ -182,10 +179,10 @@ def main():
             )
 
 
-            # Make API request when button clicked
-            if st.button("Show Survival Curves"):
-                with st.spinner("Analysing data..."):
-
+        if st.button("Show Survival Curves"):
+            with st.spinner("Analysing data..."):
+                col1, col2, col3 = st.columns([3, 3, 1])
+                with col1:
                     top_n_high_risk =risk_scores_df.head(num_samples)
                     # Prepare API request payload
                     payload = {
@@ -219,70 +216,62 @@ def main():
                     df_height = 35 * len(top_n_high_risk) + 35
                     st.dataframe(styled_df, height=df_height, hide_index=True, use_container_width=True)
 
-                    st.empty()  # This resets the layout
+                with col2:
+                    # Display survival curves
 
-        # Calculate dynamic height (35px per row + header)
-        # df_height = min(600, 30 * len(top_n_high_risk) + 35)
-        # st.dataframe(top_n_high_risk, height=df_height, use_container_width=True)
+                    st.subheader("Survival Analysis")
+                    st.plotly_chart(
+                        plot_survival_curves(survival_df),
+                        use_container_width=True
+                    )
+                with col3:
+                    st.subheader("Key Metrics")
+                    st.metric("Highest Risk", f"{top_n_high_risk['PredictedRisk'].max():.2f}")
+                    st.metric("Average Tenure", f"{top_n_high_risk['YearsAtCompany'].mean():.1f} years")
 
-                    # Display results
-                    col1, col2 = st.columns([3, 1])
+                    # Get top 2 risky departments
+                    dept_counts = top_n_high_risk['Department'].value_counts().head(2)
+                    top_depts = pd.DataFrame({
+                        'Department': dept_counts.index,
+                        'At Risk Employees': dept_counts.values
+                    })
 
-                    with col1:
+                    st.write("**Departments at Risk**")
+                    st.dataframe(
+                        top_depts,
+                        hide_index=True,
+                        use_container_width=True,
+                        height = 35 * len(top_depts) + 38)
 
-                        st.subheader("Survival Analysis")
-                        st.plotly_chart(
-                            plot_survival_curves(survival_df),
-                            use_container_width=True
+                                # Find highest JobLevel at risk
+                                # max_level = top_n_high_risk['JobLevel'].max()
+                                # high_level_risks = top_n_high_risk[top_n_high_risk['JobLevel'] == max_level]
+
+                                # if not high_level_risks.empty:
+                                #     highest = high_level_risks.iloc[0]
+
+                                #     # Create mini-table
+                                #     high_risk_employee = pd.DataFrame([['Risk Score', 'Employee', 'Department'],
+                                #         [
+                                #             f"{highest['PredictedRisk']:.2f}",
+                                #             highest['EmployeeNumber'],
+                                #             highest['Department']
+                                #         ]])
+
+                                #     st.write(f"**Highest Level at Risk: (L{max_level})**")
+                                #     st.dataframe(
+                                #         high_risk_employee,
+                                #         hide_index=True,
+                                #         use_container_width=True,
+                                #         height=150  # Fixed compact size
+                                #     )
+
+                    st.download_button(
+                            label="Download Results",
+                            data=top_n_high_risk.to_csv(index=False),
+                            file_name=f"high_risk_employees.csv",
+                            mime="text/csv"
                         )
-                    with col2:
-                        st.subheader("Key Metrics")
-                        st.metric("Highest Risk", f"{top_n_high_risk['PredictedRisk'].max():.2f}")
-                        st.metric("Average Tenure", f"{top_n_high_risk['YearsAtCompany'].mean():.1f} years")
-
-                        # Get top 2 risky departments
-                        dept_counts = top_n_high_risk['Department'].value_counts().head(2)
-                        top_depts = pd.DataFrame({
-                            'Department': dept_counts.index,
-                            'At Risk Employees': dept_counts.values
-                        })
-
-                        st.write("**Departments at Risk**")
-                        st.dataframe(
-                            top_depts,
-                            hide_index=True,
-                            use_container_width=True,
-                            height = 35 * len(top_depts) + 38)
-
-                                    # Find highest JobLevel at risk
-                                    # max_level = top_n_high_risk['JobLevel'].max()
-                                    # high_level_risks = top_n_high_risk[top_n_high_risk['JobLevel'] == max_level]
-
-                                    # if not high_level_risks.empty:
-                                    #     highest = high_level_risks.iloc[0]
-
-                                    #     # Create mini-table
-                                    #     high_risk_employee = pd.DataFrame([['Risk Score', 'Employee', 'Department'],
-                                    #         [
-                                    #             f"{highest['PredictedRisk']:.2f}",
-                                    #             highest['EmployeeNumber'],
-                                    #             highest['Department']
-                                    #         ]])
-
-                                    #     st.write(f"**Highest Level at Risk: (L{max_level})**")
-                                    #     st.dataframe(
-                                    #         high_risk_employee,
-                                    #         hide_index=True,
-                                    #         use_container_width=True,
-                                    #         height=150  # Fixed compact size
-                                    #     )
-
-                        st.download_button(
-                                label="Download Results",
-                                data=top_n_high_risk.to_csv(index=False),
-                                file_name=f"high_risk_employees.csv",
-                                mime="text/csv"
-                            )
 
 
 
