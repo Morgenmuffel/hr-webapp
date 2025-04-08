@@ -1,11 +1,14 @@
 /* assets/styles.css */
 .stApp {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)),
+  background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)),
   var(--bg-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  color: whitesmoke !important;
+}
+p {
   color: white;
 }
 .st-emotion-cache-ocsh0s {
@@ -24,5 +27,8 @@
   color: white;
 }
 .st-emotion-cache-ocsh0s:focus:not(:active) {
+  color: white;
+}
+.st-emotion-cache-1wivap2 {
   color: white;
 }
