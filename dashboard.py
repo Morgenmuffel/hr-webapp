@@ -101,10 +101,17 @@ def main():
 
     # Load data
     try:
+        st.empty()
+        st.empty()
         risk_scores_df = load_gcs_data(GCS_BUCKET, GCS_RISK_SCORES)
-        col1, col2 = st.columns([3, 2])
-        with col1:
+        feature_importance_df = load_gcs_data(GCS_BUCKET, GCS_FEATURE_IMPORTANCE)
+        col1, col2 = st.columns([3, 4])
+        with col2:
             # Display data preview
+            st.empty()
+            st.empty()
+            st.empty()
+            st.empty()
             with st.expander("Preview Active Employees at Risk", expanded=True):
                 # Reorder columns with predictedRisk first
                 columns_order = ['PredictedRisk'] + [col for col in risk_scores_df.columns if col != 'PredictedRisk']
@@ -114,9 +121,9 @@ def main():
                     risk_scores_df[columns_order].head(10),
                     hide_index=True,
             )
-        with col2:
-            st.subheader("Feature Importance in Employee Attrition Prediction")
-            feature_importance_df = load_gcs_data(GCS_BUCKET, GCS_FEATURE_IMPORTANCE)
+        with col1:
+            st.subheader("Main factors")
+
             # Set modern style
             sns.set_style("whitegrid")
 

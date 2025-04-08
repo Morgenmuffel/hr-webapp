@@ -8,7 +8,21 @@
   background-attachment: fixed;
   color: white;
 }
-button {
-  background-color: #cf5821;
-  border-color: #cf5821;
+.st-emotion-cache-ocsh0s {
+  background-color: #d41f76;
+  border-color: #d41f76;
+}
+.st-emotion-cache-ocsh0s:hover {
+  background-color: #a2165a;
+  border-color: #a2165a;
+  color: white;
+}
+.st-emotion-cache-ocsh0s:focus {
+  color: white;
+}
+.st-emotion-cache-ocsh0s:active {
+  color: white;
+}
+.st-emotion-cache-ocsh0s:focus:not(:active) {
+  color: white;
 }
